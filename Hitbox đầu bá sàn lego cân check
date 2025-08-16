@@ -1,0 +1,152 @@
+_G.HeadSize = 14
+_G.HeadHitboxEnabled = false
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Lưu trạng thái gốc của đầu
+local originalHeadSizes = {}
+
+-- GUI Setup
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = CoreGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 95)
+frame.Position = UDim2.new(0.5, -100, 0.5, -47.5)
+frame.BackgroundColor3 = Color3.new(1, 1, 1)
+frame.Parent = screenGui
+
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 20)
+titleBar.BackgroundColor3 = Color3.new(0.5, 0.5, 0.5)
+titleBar.Parent = frame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 1, 0)
+titleLabel.Text = "Menu bá sàn lego by Đức Hoàng "
+titleLabel.BackgroundTransparency = 1
+titleLabel.Parent = titleBar
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(1, 0, 0, 20)
+toggleButton.Position = UDim2.new(0, 0, 0, 25)
+toggleButton.Text = _G.HeadHitboxEnabled and "Tắt" or "Bật"
+toggleButton.Parent = frame
+
+local sizeLabel = Instance.new("TextLabel")
+sizeLabel.Size = UDim2.new(1, 0, 0, 20)
+sizeLabel.Position = UDim2.new(0, 0, 0, 50)
+sizeLabel.Text = "KĂ­ch thÆ°á»›c Ä‘áº§u: " .. tostring(_G.HeadSize)
+sizeLabel.BackgroundTransparency = 1
+sizeLabel.Parent = frame
+
+local hideButton = Instance.new("TextButton")
+hideButton.Size = UDim2.new(1, 0, 0, 20)
+hideButton.Position = UDim2.new(0, 0, 0, 75)
+hideButton.Text = "áº¨n"
+hideButton.Parent = frame
+
+local showButton = Instance.new("TextButton")
+showButton.Size = UDim2.new(0, 50, 0, 20)
+showButton.Position = UDim2.new(0, 10, 0, 10)
+showButton.Text = "Hiá»‡n"
+showButton.Visible = false
+showButton.Parent = screenGui
+
+-- Kéo GUI
+local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Toggle chức năng
+toggleButton.MouseButton1Click:Connect(function()
+    _G.HeadHitboxEnabled = not _G.HeadHitboxEnabled
+    toggleButton.Text = _G.HeadHitboxEnabled and "Táº¯t" or "Báº­t"
+
+    if not _G.HeadHitboxEnabled then
+        -- Khôi phục kích thước đầu gốc
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                local char = player.Character
+                if char then
+                    local head = char:FindFirstChild("Head")
+                    if head and originalHeadSizes[player] then
+                        head.Size = originalHeadSizes[player]
+                        head.Transparency = 0
+                        head.Material = Enum.Material.Plastic
+                        head.BrickColor = BrickColor.new("Medium stone grey")
+                        head.CanCollide = true
+                        head.Massless = false
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- ẩn / Hiện GUI
+hideButton.MouseButton1Click:Connect(function()
+    frame.Visible = false
+    showButton.Visible = true
+end)
+
+showButton.MouseButton1Click:Connect(function()
+    frame.Visible = true
+    showButton.Visible = false
+end)
+
+-- Thước kích thước hitbox
+RunService.RenderStepped:Connect(function()
+    if _G.HeadHitboxEnabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                local char = player.Character
+                if char then
+                    local head = char:FindFirstChild("Head")
+                    if head then
+                        -- Lưu kích thướcc gốc nếu chưa có
+                        if not originalHeadSizes[player] then
+                            originalHeadSizes[player] = head.Size
+                        end
+
+                        -- Chỉnh sửa kí­ch thước
+                        head.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+                        head.Transparency = 1
+                        head.BrickColor = BrickColor.new("Really red")
+                        head.Material = Enum.Material.Neon
+                        head.CanCollide = false
+                        head.Massless = true
+                    end
+                end
+            end
+        end
+    end
+end)
